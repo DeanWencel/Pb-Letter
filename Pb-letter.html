@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Message For You</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Romantic Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Great+Vibes&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ==========================================
+           CORE STYLES & HARDWARE ACCELERATION
+           ========================================== */
+        :root {
+            --rose-ease: cubic-bezier(0.22, 1, 0.36, 1);
+            --flap-ease: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #05020a;
+            font-family: 'Cormorant Garamond', serif;
+            color: #fce7f3;
+        }
+
+        .font-script {
+            font-family: 'Great Vibes', cursive;
+        }
+
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Background Canvas for Stars & Stardust Trail */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Ambient vignette overlay */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, transparent 40%, rgba(3, 1, 6, 0.85) 100%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* World Stage that moves opposite to the camera */
+        #world {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            z-index: 10;
+            will-change: transform;
+        }
+
+        /* Entities positioned in world coordinates (0,0 is initial center) */
+        .world-entity {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            will-change: transform, opacity;
+        }
+
+        /* ==========================================
+           ROSE STYLING & BLOOM ANIMATIONS
+           ========================================== */
+        .rose-wrapper {
+            cursor: pointer;
+            width: 320px;
+            height: 460px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: filter 0.6s ease;
+        }
+
+        .rose-wrapper:hover {
+            filter: drop-shadow(0 0 25px rgba(244, 63, 94, 0.45));
+        }
+
+        .rose-aura {
+            position: absolute;
+            top: 130px;
+            left: 50%;
+            width: 180px;
+            height: 180px;
+            transform: translate(-50%, -50%) scale(0.7);
+            background: radial-gradient(circle, rgba(244,63,94,0.45) 0%, rgba(190,18,60,0.18) 50%, transparent 72%);
+            border-radius: 50%;
+            opacity: 0.65;
+            transition: all 2.4s var(--rose-ease);
+            pointer-events: none;
+            animation: auraPulse 4s ease-in-out infinite alternate;
+        }
+
+        .rose-wrapper.bloomed .rose-aura {
+            transform: translate(-50%, -50%) scale(2.3);
+            background: radial-gradient(circle, rgba(251,113,133,0.65) 0%, rgba(225,29,72,0.3) 45%, transparent 75%);
+            opacity: 1;
+        }
+
+        @keyframes auraPulse {
+            0% { opacity: 0.45; transform: translate(-50%, -50%) scale(0.68); }
+            100% { opacity: 0.8; transform: translate(-50%, -50%) scale(0.82); }
+        }
+
+        /* SVG Petal Transitions */
+        .petal {
+            transition: transform 2.4s var(--rose-ease), filter 2.4s var(--rose-ease);
+            will-change: transform;
+        }
+
+        /* Initial tight bud states (Origin at base of bud: 100px, 165px) */
+        .sepal-left   { transform-origin: 100px 165px; transform: rotate(18deg) scale(0.85); transition: transform 2.2s var(--rose-ease); }
+        .sepal-right  { transform-origin: 100px 165px; transform: rotate(-18deg) scale(0.85); transition: transform 2.2s var(--rose-ease); }
+        
+        .petal-outer-l { transform-origin: 100px 165px; transform: rotate(22deg) scale(0.82, 0.92); }
+        .petal-outer-r { transform-origin: 100px 165px; transform: rotate(-22deg) scale(0.82, 0.92); }
+        .petal-outer-c { transform-origin: 100px 165px; transform: scale(0.86, 0.95); }
+
+        .petal-mid-l   { transform-origin: 100px 162px; transform: rotate(15deg) scale(0.80, 0.92); transition-delay: 0.12s; }
+        .petal-mid-r   { transform-origin: 100px 162px; transform: rotate(-15deg) scale(0.80, 0.92); transition-delay: 0.12s; }
+        
+        .petal-inner-l { transform-origin: 100px 158px; transform: rotate(10deg) scale(0.78, 0.92); transition-delay: 0.25s; }
+        .petal-inner-r { transform-origin: 100px 158px; transform: rotate(-10deg) scale(0.78, 0.92); transition-delay: 0.25s; }
+        .petal-core    { transform-origin: 100px 155px; transform: scale(0.75, 0.9) translateY(8px); transition-delay: 0.35s; }
+
+        /* Bloomed Open States */
+        .rose-wrapper.bloomed .sepal-left   { transform: rotate(-38deg) scale(1.05); }
+        .rose-wrapper.bloomed .sepal-right  { transform: rotate(38deg) scale(1.05); }
+
+        .rose-wrapper.bloomed .petal-outer-l { transform: rotate(-44deg) translate(-8px, 4px) scale(1.08, 1.02); }
+        .rose-wrapper.bloomed .petal-outer-r { transform: rotate(44deg) translate(8px, 4px) scale(1.08, 1.02); }
+        .rose-wrapper.bloomed .petal-outer-c { transform: translateY(-6px) scale(1.12, 1.04); }
+
+        .rose-wrapper.bloomed .petal-mid-l   { transform: rotate(-26deg) translate(-4px, -2px) scale(1.06, 1.05); }
+        .rose-wrapper.bloomed .petal-mid-r   { transform: rotate(26deg) translate(4px, -2px) scale(1.06, 1.05); }
+
+        .rose-wrapper.bloomed .petal-inner-l { transform: rotate(-13deg) translateY(-8px) scale(1.04, 1.06); }
+        .rose-wrapper.bloomed .petal-inner-r { transform: rotate(13deg) translateY(-8px) scale(1.04, 1.06); }
+        .rose-wrapper.bloomed .petal-core    { transform: translateY(-14px) scale(1.08, 1.12); filter: brightness(1.2); }
+
+        /* Prompt Text */
+        .click-prompt {
+            margin-top: -15px;
+            letter-spacing: 0.2em;
+            animation: floatPrompt 3s ease-in-out infinite;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        @keyframes floatPrompt {
+            0%, 100% { transform: translateY(0px); opacity: 0.7; }
+            50% { transform: translateY(-6px); opacity: 1; }
+        }
+
+        /* ==========================================
+           TRAVELING HEART STYLING
+           ========================================== */
+        #heart-entity {
+            pointer-events: none;
+            z-index: 30;
+            opacity: 0;
+        }
+
+        .heart-pulse-box {
+            width: 68px;
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 0 18px rgba(244, 63, 94, 0.95)) drop-shadow(0 0 35px rgba(251, 191, 36, 0.6));
+            animation: heartBeat 1.3s ease-in-out infinite;
+        }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            18% { transform: scale(1.16); }
+            36% { transform: scale(0.96); }
+            54% { transform: scale(1.08); }
+        }
+
+        /* ==========================================
+           VINTAGE ENVELOPE & WAX SEAL
+           ========================================== */
+        .envelope-container {
+            width: 340px;
+            height: 230px;
+            perspective: 1200px;
+            position: relative;
+        }
+
+        @media (min-width: 640px) {
+            .envelope-container {
+                width: 420px;
+                height: 280px;
+            }
+        }
+
+        .envelope-aura {
+            position: absolute;
+            inset: -40px;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.25) 0%, rgba(244, 63, 94, 0.15) 45%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(15px);
+            z-index: 0;
+            transition: all 1.2s ease;
+        }
+
+        .envelope-container.opened .envelope-aura {
+            transform: scale(1.35);
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.45) 0%, rgba(244, 63, 94, 0.25) 50%, transparent 75%);
+        }
+
+        /* Back of Envelope */
+        .envelope-back {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #d6c1a7 0%, #b89f80 100%);
+            border-radius: 10px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(82, 54, 28, 0.35);
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        /* Paper inside the envelope that slides up before full letter modal */
+        .envelope-letter-preview {
+            position: absolute;
+            left: 6%;
+            right: 6%;
+            bottom: 8%;
+            height: 86%;
+            background: linear-gradient(to bottom, #fffdf9 0%, #f5ebd9 100%);
+            border-radius: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+            z-index: 2;
+            padding: 22px 26px;
+            transition: transform 1.3s cubic-bezier(0.22, 1, 0.36, 1) 0.55s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid rgba(180, 145, 105, 0.35);
+        }
+
+        .envelope-container.opened .envelope-letter-preview {
+            transform: translateY(-58%);
+        }
+
+        /* Envelope Front Pocket (Side & Bottom Flaps) */
+        .envelope-pocket {
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            pointer-events: none;
+            filter: drop-shadow(0 -3px 6px rgba(50, 30, 10, 0.22));
+        }
+
+        /* Top Flap that folds open */
+        .envelope-flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            z-index: 4;
+            transform-origin: top center;
+            transition: transform 1.15s var(--flap-ease), z-index 0s 0.55s;
+            filter: drop-shadow(0 6px 8px rgba(45, 25, 10, 0.32));
+        }
+
+        .envelope-container.opened .envelope-flap {
+            transform: rotateX(180deg);
+            z-index: 1;
+        }
+
+        /* Crimson & Gold Wax Seal */
+        .wax-seal {
+            position: absolute;
+            top: 54%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #e11d48 0%, #9f1239 55%, #4c0519 100%);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -3px 6px rgba(0,0,0,0.6);
+            border: 2px solid rgba(251, 191, 36, 0.45);
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.65s ease;
+        }
+
+        .wax-seal.seal-glow {
+            transform: translate(-50%, -50%) scale(1.25);
+            box-shadow: 0 0 35px #f43f5e, 0 0 60px #fbbf24, inset 0 0 15px #fff;
+            border-color: #fde68a;
+        }
+
+        .envelope-container.opened .wax-seal {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(1.6);
+            pointer-events: none;
+        }
+
+        /* ==========================================
+           FULL PARCHMENT LETTER MODAL
+           ========================================== */
+        #letter-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            background: rgba(6, 2, 12, 0.72);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1.1s ease;
+        }
+
+        #letter-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .parchment-card {
+            position: relative;
+            width: 100%;
+            max-width: 620px;
+            max-height: 85vh;
+            overflow-y: auto;
+            background: 
+                radial-gradient(circle at center, #fffdf9 0%, #f7efe2 65%, #ead8be 100%);
+            color: #3b2314;
+            border-radius: 12px;
+            padding: 2.5rem 2rem;
+            box-shadow: 
+                0 25px 70px rgba(0, 0, 0, 0.85),
+                0 0 40px rgba(244, 63, 94, 0.22),
+                inset 0 0 45px rgba(166, 124, 82, 0.28);
+            border: 1px solid #d5b895;
+            transform: translateY(35px) scale(0.94);
+            transition: transform 1.1s var(--rose-ease);
+        }
+
+        @media (min-width: 640px) {
+            .parchment-card {
+                padding: 3.5rem 3.5rem;
+            }
+        }
+
+        #letter-overlay.visible .parchment-card {
+            transform: translateY(0) scale(1);
+        }
+
+        /* Custom Scrollbar for Parchment */
+        .parchment-card::-webkit-scrollbar {
+            width: 6px;
+        }
+        .parchment-card::-webkit-scrollbar-track {
+            background: rgba(213, 184, 149, 0.2);
+        }
+        .parchment-card::-webkit-scrollbar-thumb {
+            background: rgba(159, 18, 57, 0.35);
+            border-radius: 3px;
+        }
+
+        /* Decorative Gold Inner Frame */
+        .parchment-border {
+            position: absolute;
+            inset: 14px;
+            border: 1px solid rgba(180, 130, 75, 0.45);
+            border-radius: 6px;
+            pointer-events: none;
+        }
+
+        .parchment-border::before {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border: 1px solid rgba(180, 130, 75, 0.22);
+            border-radius: 4px;
+        }
+
+        /* ==========================================
+           FLOATING UI CONTROLS & EDITOR MODAL
+           ========================================== */
+        .glass-btn {
+            background: rgba(24, 10, 32, 0.65);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            color: #fce7f3;
+            transition: all 0.3s ease;
+        }
+
+        .glass-btn:hover {
+            background: rgba(159, 18, 57, 0.45);
+            border-color: rgba(251, 113, 133, 0.65);
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.35);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Starfield & Stardust Trail Canvas -->
+    <canvas id="bg-canvas"></canvas>
+    <div class="vignette"></div>
+
+    <!-- ==========================================
+         2D CAMERA WORLD CONTAINER
+         ========================================== -->
+    <div id="world">
+
+        <!-- 1. THE ROSE ENTITY (At World Origin 0, 0) -->
+        <div id="rose-entity" class="world-entity" style="left: 0px; top: 0px;">
+            <div id="rose-trigger" class="rose-wrapper" role="button" aria-label="Click the rose to bloom" tabindex="0">
+                <div class="rose-aura"></div>
+                
+                <!-- Multi-layered SVG Rose -->
+                <svg viewBox="0 0 200 320" class="w-72 h-96 overflow-visible">
+                    <defs>
+                        <!-- Rich Crimson & Velvet Gradients -->
+                        <linearGradient id="stemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#15803d" />
+                            <stop offset="50%" stop-color="#166534" />
+                            <stop offset="100%" stop-color="#052e16" />
+                        </linearGradient>
+                        <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#22c55e" />
+                            <stop offset="40%" stop-color="#15803d" />
+                            <stop offset="100%" stop-color="#064e3b" />
+                        </linearGradient>
+                        <linearGradient id="petalDark" x1="50%" y1="0%" x2="50%" y2="100%">
+                            <stop offset="0%" stop-color="#e11d48" />
+                            <stop offset="60%" stop-color="#881337" />
+                            <stop offset="100%" stop-color="#4c0519" />
+                        </linearGradient>
+                        <linearGradient id="petalMid" x1="30%" y1="0%" x2="70%" y2="100%">
+                            <stop offset="0%" stop-color="#fb7185" />
+                            <stop offset="45%" stop-color="#e11d48" />
+                            <stop offset="100%" stop-color="#881337" />
+                        </linearGradient>
+                        <linearGradient id="petalBright" x1="50%" y1="0%" x2="50%" y2="100%">
+                            <stop offset="0%" stop-color="#ffe4e6" />
+                            <stop offset="25%" stop-color="#fda4af" />
+                            <stop offset="70%" stop-color="#f43f5e" />
+                            <stop offset="100%" stop-color="#9f1239" />
+                        </linearGradient>
+                        <radialGradient id="coreGlow" cx="50%" cy="40%" r="60%">
+                            <stop offset="0%" stop-color="#fef08a" stop-opacity="0.9" />
+                            <stop offset="45%" stop-color="#fb7185" stop-opacity="0.6" />
+                            <stop offset="100%" stop-color="#e11d48" stop-opacity="0" />
+                        </radialGradient>
+                    </defs>
+
+                    <!-- Stem -->
+                    <path d="M100 160 C 97 210, 105 260, 98 310" stroke="url(#stemGrad)" stroke-width="6.5" stroke-linecap="round" fill="none" />
+                    
+                    <!-- Thorns -->
+                    <path d="M99 195 L 91 190 L 99 186 Z" fill="#14532d" />
+                    <path d="M101 235 L 109 230 L 101 226 Z" fill="#14532d" />
+                    <path d="M99 270 L 92 265 L 99 261 Z" fill="#14532d" />
+
+                    <!-- Left Leaf -->
+                    <g transform="translate(98, 220) rotate(-32)">
+                        <path d="M0 0 C -25 -18, -55 -8, -65 12 C -45 24, -20 18, 0 0 Z" fill="url(#leafGrad)" />
+                        <path d="M0 0 C -22 2, -42 6, -60 11" stroke="#4ade80" stroke-width="1" stroke-opacity="0.4" fill="none" />
+                    </g>
+
+                    <!-- Right Leaf -->
+                    <g transform="translate(101, 245) rotate(28)">
+                        <path d="M0 0 C 25 -18, 55 -8, 65 12 C 45 24, 20 18, 0 0 Z" fill="url(#leafGrad)" />
+                        <path d="M0 0 C 22 2, 42 6, 60 11" stroke="#4ade80" stroke-width="1" stroke-opacity="0.4" fill="none" />
+                    </g>
+
+                    <!-- Sepals (Green Calyx cradling the bud) -->
+                    <path class="sepal-left" d="M100 166 C 78 162, 62 135, 58 108 C 72 128, 86 148, 100 162 Z" fill="url(#leafGrad)" />
+                    <path class="sepal-right" d="M100 166 C 122 162, 138 135, 142 108 C 128 128, 114 148, 100 162 Z" fill="url(#leafGrad)" />
+
+                    <!-- Back/Outer Center Petal -->
+                    <path class="petal petal-outer-c" d="M100 165 C 55 155, 50 85, 100 58 C 150 85, 145 155, 100 165 Z" fill="url(#petalDark)" />
+
+                    <!-- Outer Left & Right Petals -->
+                    <path class="petal petal-outer-l" d="M100 165 C 52 160, 38 98, 76 68 C 96 86, 108 125, 100 165 Z" fill="url(#petalDark)" />
+                    <path class="petal petal-outer-r" d="M100 165 C 148 160, 162 98, 124 68 C 104 86, 92 125, 100 165 Z" fill="url(#petalDark)" />
+
+                    <!-- Middle Layer Left & Right Petals -->
+                    <path class="petal petal-mid-l" d="M100 162 C 60 152, 52 92, 88 64 C 110 86, 112 130, 100 162 Z" fill="url(#petalMid)" />
+                    <path class="petal petal-mid-r" d="M100 162 C 140 152, 148 92, 112 64 C 90 86, 88 130, 100 162 Z" fill="url(#petalMid)" />
+
+                    <!-- Inner Golden-Rose Magical Core Glow -->
+                    <circle class="petal petal-core" cx="100" cy="110" r="38" fill="url(#coreGlow)" />
+
+                    <!-- Center Core Bud -->
+                    <path class="petal petal-core" d="M100 156 C 74 145, 74 88, 100 66 C 126 88, 126 145, 100 156 Z" fill="url(#petalBright)" />
+
+                    <!-- Inner Left & Right Overlapping Velvet Petals -->
+                    <path class="petal petal-inner-l" d="M100 160 C 66 150, 64 96, 95 72 C 115 95, 112 135, 100 160 Z" fill="url(#petalBright)" opacity="0.92" />
+                    <path class="petal petal-inner-r" d="M100 160 C 134 150, 136 96, 105 72 C 85 95, 88 135, 100 160 Z" fill="url(#petalMid)" opacity="0.95" />
+
+                    <!-- Base Receptacle -->
+                    <path d="M90 160 C 90 172, 110 172, 110 160 Z" fill="#15803d" />
+                </svg>
+
+                <!-- Gentle Prompt -->
+                <div id="rose-prompt" class="click-prompt text-center">
+                    <p class="font-cinzel text-xs sm:text-sm uppercase tracking-[0.28em] text-rose-200/90">Click the Rose to Bloom</p>
+                    <div class="w-12 h-[1px] bg-gradient-to-r from-transparent via-rose-400/60 to-transparent mx-auto mt-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. THE FLOATING HEART ENTITY (Emerges from Rose, travels to Envelope) -->
+        <div id="heart-entity" class="world-entity" style="left: 0px; top: -50px;">
+            <div class="heart-pulse-box">
+                <svg viewBox="0 0 100 100" class="w-full h-full overflow-visible">
+                    <defs>
+                        <radialGradient id="heartGrad" cx="35%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#fff1f2" />
+                            <stop offset="25%" stop-color="#fb7185" />
+                            <stop offset="65%" stop-color="#e11d48" />
+                            <stop offset="100%" stop-color="#881337" />
+                        </radialGradient>
+                        <linearGradient id="goldRim" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#fef08a" />
+                            <stop offset="50%" stop-color="#f59e0b" />
+                            <stop offset="100%" stop-color="#fb7185" />
+                        </linearGradient>
+                    </defs>
+                    <path d="M50 86 C 42 78, 12 56, 12 33 C 12 18, 24 8, 37 8 C 45 8, 50 14, 50 20 C 50 14, 55 8, 63 8 C 76 8, 88 18, 88 33 C 88 56, 58 78, 50 86 Z" 
+                          fill="url(#heartGrad)" 
+                          stroke="url(#goldRim)" 
+                          stroke-width="2.5" />
+                    <!-- Specular highlight -->
+                    <path d="M24 28 C 24 20, 30 15, 36 15" stroke="rgba(255,255,255,0.65)" stroke-width="3" stroke-linecap="round" fill="none" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- 3. THE VINTAGE ENVELOPE ENTITY (Positioned high in the starry sky) -->
+        <div id="envelope-entity" class="world-entity" style="left: 0px; top: -1800px;">
+            <div id="envelope-box" class="envelope-container">
+                <div class="envelope-aura"></div>
+
+                <!-- Back of Envelope -->
+                <div class="envelope-back"></div>
+
+                <!-- Sliding Inner Letter Preview -->
+                <div class="envelope-letter-preview">
+                    <div class="w-full border-b border-amber-900/20 pb-2 mb-2 text-center">
+                        <span id="preview-salutation" class="font-script text-2xl sm:text-3xl text-rose-900">Hello baby!</span>
+                    </div>
+                    <div class="w-4/5 h-2 bg-amber-900/10 rounded-full my-1.5"></div>
+                    <div class="w-3/4 h-2 bg-amber-900/10 rounded-full my-1.5"></div>
+                    <div class="w-5/6 h-2 bg-amber-900/10 rounded-full my-1.5"></div>
+                </div>
+
+                <!-- Front Envelope Pocket (SVG folds) -->
+                <svg class="envelope-pocket" viewBox="0 0 420 280" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="pocketLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#e5d3bc" />
+                            <stop offset="100%" stop-color="#cbb092" />
+                        </linearGradient>
+                        <linearGradient id="pocketRight" x1="100%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#decab0" />
+                            <stop offset="100%" stop-color="#c3a686" />
+                        </linearGradient>
+                        <linearGradient id="pocketBottom" x1="50%" y1="0%" x2="50%" y2="100%">
+                            <stop offset="0%" stop-color="#ead8c3" />
+                            <stop offset="100%" stop-color="#cfb495" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Left Fold -->
+                    <polygon points="0,0 210,150 0,280" fill="url(#pocketLeft)" stroke="rgba(120,80,40,0.18)" stroke-width="1" />
+                    <!-- Right Fold -->
+                    <polygon points="420,0 210,150 420,280" fill="url(#pocketRight)" stroke="rgba(120,80,40,0.18)" stroke-width="1" />
+                    <!-- Bottom Fold -->
+                    <polygon points="0,280 210,140 420,280" fill="url(#pocketBottom)" stroke="rgba(120,80,40,0.22)" stroke-width="1" />
+                </svg>
+
+                <!-- Top Opening Flap -->
+                <svg class="envelope-flap" viewBox="0 0 420 168" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="flapGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+                            <stop offset="0%" stop-color="#f0e1ce" />
+                            <stop offset="100%" stop-color="#d5bc9d" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="0,0 420,0 210,158" fill="url(#flapGrad)" stroke="rgba(120,80,40,0.25)" stroke-width="1" />
+                </svg>
+
+                <!-- Wax Seal -->
+                <div id="wax-seal" class="wax-seal">
+                    <svg viewBox="0 0 24 24" class="w-7 h-7 text-amber-200/90 fill-current">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ==========================================
+         FULL PARCHMENT LETTER OVERLAY
+         ========================================== -->
+    <div id="letter-overlay" role="dialog" aria-modal="true" aria-labelledby="letter-salutation">
+        <div class="parchment-card">
+            <div class="parchment-border"></div>
+
+            <!-- Ornamental Top Header -->
+            <div class="text-center mb-6 relative z-10">
+                <svg class="w-10 h-10 mx-auto text-rose-800/80 mb-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                <div class="w-36 h-[1px] bg-gradient-to-r from-transparent via-amber-800/50 to-transparent mx-auto"></div>
+            </div>
+
+            <!-- Letter Content -->
+            <div class="relative z-10 space-y-5 px-2 sm:px-4">
+                <h1 id="letter-salutation" class="font-script text-4xl sm:text-5xl text-rose-950 mb-4">Hello baby!</h1>
+                
+                <div id="letter-body" class="text-lg sm:text-xl leading-relaxed text-stone-800 space-y-4 font-normal">
+                    <p>This might be a bit sudden but I just wanted to let you know that I am proud of you baby. I know college life isn't easy, but I am proud to see you doing your best. Baby I may not be in your shoes but I feel that school has been heavy lately and I am sorry I am not there to hug you physically. I feel so guilty not being able to help you properly with studies. But I hope you know I am always here for you, ready to listen, ready to be present.</p>
+                    <p>No matter how hard school gets please don't ever give up, you are the strongest girl I know. My Phoebe will still keep going despite the hardships. Don't ever think you are not enough, that you are dumb. You are perfect the way that you are. Don't ever change my baby, your boyfriend loves you for you, I love you so much!!! MWAPMWAP</p>
+                </div>
+
+                <div class="pt-6 text-right">
+                    <p id="letter-closing" class="italic text-lg text-stone-700 mb-1">Always and forever yours,</p>
+                    <p id="letter-signature" class="font-script text-3xl sm:text-4xl text-rose-900">Dean</p>
+                </div>
+            </div>
+
+            <!-- Ornamental Footer Actions -->
+            <div class="mt-8 pt-4 border-t border-amber-900/20 flex items-center justify-center relative z-10">
+                <button id="btn-replay-modal" class="text-xs font-cinzel uppercase tracking-widest text-rose-900 hover:text-rose-700 flex items-center gap-1.5 py-2 px-4 rounded-full border border-rose-900/20 hover:bg-rose-900/5 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Replay Experience
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         FLOATING CORNER CONTROLS
+         ========================================== -->
+    <div class="fixed bottom-5 right-5 z-40 flex items-center gap-2.5">
+        <button id="btn-replay-float" class="glass-btn px-4 py-2 rounded-full text-xs font-cinzel tracking-wider uppercase flex items-center gap-1.5 opacity-80 hover:opacity-100" title="Replay Experience">
+            <svg class="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span>Replay Experience</span>
+        </button>
+    </div>
+
+    <script>
+        /* ============================================================================
+           STATE & WORLD COORDINATES
+           ============================================================================ */
+        const STATE = {
+            IDLE: 'IDLE',
+            BLOOMING: 'BLOOMING',
+            EMERGING: 'EMERGING',
+            JOURNEY: 'JOURNEY',
+            OPENING_ENVELOPE: 'OPENING_ENVELOPE',
+            READING: 'READING'
+        };
+
+        let currentState = STATE.IDLE;
+        let stateStartTime = 0;
+
+        // World Coordinates (Rose is at 0,0; Envelope is high up and slightly right)
+        const ENVELOPE_POS = { x: 260, y: -1850 };
+        const HEART_START_POS = { x: 0, y: -45 };
+        const HEART_FLOAT_POS = { x: 0, y: -155 };
+
+        // Current Camera & Heart Positions in World Space
+        const camera = { x: 0, y: 0 };
+        const heart = { x: 0, y: -45, scale: 0, opacity: 0, rotation: 0 };
+
+        // DOM Elements
+        const worldEl = document.getElementById('world');
+        const roseTrigger = document.getElementById('rose-trigger');
+        const rosePrompt = document.getElementById('rose-prompt');
+        const heartEntity = document.getElementById('heart-entity');
+        const envelopeEntity = document.getElementById('envelope-entity');
+        const envelopeBox = document.getElementById('envelope-box');
+        const waxSeal = document.getElementById('wax-seal');
+        const letterOverlay = document.getElementById('letter-overlay');
+
+        // Position Envelope in World Space
+        envelopeEntity.style.left = `${ENVELOPE_POS.x}px`;
+        envelopeEntity.style.top = `${ENVELOPE_POS.y}px`;
+
+        /* ============================================================================
+           MATHEMATICAL EASING & BEZIER FUNCTIONS FOR ULTRA-SMOOTH MOTION
+           ============================================================================ */
+        function clamp01(t) {
+            return Math.max(0, Math.min(1, t));
+        }
+
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+
+        function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+
+        function easeOutBack(t) {
+            const c1 = 1.70158;
+            const c3 = c1 + 1;
+            return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+        }
+
+        // Cubic Bezier interpolation for graceful S-curve flight path
+        function getCubicBezierPoint(t, p0, p1, p2, p3) {
+            const u = 1 - t;
+            const tt = t * t;
+            const uu = u * u;
+            const uuu = uu * u;
+            const ttt = tt * t;
+
+            return {
+                x: uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x,
+                y: uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y
+            };
+        }
+
+        /* ============================================================================
+           STARFIELD, FIREFLIES & STARDUST TRAIL ENGINE (CANVAS)
+           ============================================================================ */
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let cw = window.innerWidth;
+        let ch = window.innerHeight;
+
+        const stars = [];
+        const fireflies = [];
+        const trailParticles = [];
+
+        function resizeCanvas() {
+            cw = window.innerWidth;
+            ch = window.innerHeight;
+            canvas.width = cw * window.devicePixelRatio;
+            canvas.height = ch * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Generate multi-layered parallax stars
+        for (let i = 0; i < 160; i++) {
+            stars.push({
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                radius: Math.random() * 1.5 + 0.4,
+                alpha: Math.random() * 0.7 + 0.2,
+                twinkleSpeed: Math.random() * 0.003 + 0.001,
+                twinklePhase: Math.random() * Math.PI * 2,
+                parallax: Math.random() * 0.35 + 0.08,
+                hue: Math.random() > 0.7 ? 345 : (Math.random() > 0.5 ? 45 : 220)
+            });
+        }
+
+        // Generate warm glowing fireflies/sparkles
+        for (let i = 0; i < 32; i++) {
+            fireflies.push({
+                x: Math.random() * 1600 - 800,
+                y: Math.random() * 2600 - 2200,
+                vx: (Math.random() - 0.5) * 0.35,
+                vy: -Math.random() * 0.4 - 0.1,
+                radius: Math.random() * 2.5 + 1.2,
+                alpha: Math.random(),
+                phase: Math.random() * Math.PI * 2,
+                color: Math.random() > 0.45 ? '251, 191, 36' : '251, 113, 133'
+            });
+        }
+
+        // Spawn sparkling stardust particle at world coordinates
+        function spawnStardust(wx, wy, count = 2, spread = 16) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 1.2 + 0.2;
+                trailParticles.push({
+                    wx: wx + (Math.random() - 0.5) * spread,
+                    wy: wy + (Math.random() - 0.5) * spread,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed + 0.35,
+                    size: Math.random() * 3.8 + 1.5,
+                    life: 1.0,
+                    decay: Math.random() * 0.015 + 0.010,
+                    isGold: Math.random() > 0.45
+                });
+            }
+        }
+
+        /* ============================================================================
+           SEQUENCE CONTROLLER & INTERACTION TRIGGERS
+           ============================================================================ */
+        let envelopeTimers = [];
+
+        function clearSequenceTimers() {
+            envelopeTimers.forEach(id => clearTimeout(id));
+            envelopeTimers = [];
+        }
+
+        function startBloomSequence() {
+            if (currentState !== STATE.IDLE) return;
+
+            currentState = STATE.BLOOMING;
+            stateStartTime = performance.now();
+
+            // 1. Trigger CSS Rose Bloom
+            roseTrigger.classList.add('bloomed');
+            rosePrompt.style.opacity = '0';
+            rosePrompt.style.transform = 'translateY(10px)';
+
+            // Burst of celebratory sparkles around the blooming bud
+            for (let i = 0; i < 18; i++) {
+                const timerId = setTimeout(() => {
+                    spawnStardust(0, -45, 3, 60);
+                }, i * 90);
+                envelopeTimers.push(timerId);
+            }
+        }
+
+        function triggerEnvelopeOpening() {
+            currentState = STATE.OPENING_ENVELOPE;
+            stateStartTime = performance.now();
+
+            // 1. Glow the wax seal upon heart landing
+            waxSeal.classList.add('seal-glow');
+            spawnStardust(ENVELOPE_POS.x, ENVELOPE_POS.y + 10, 28, 35);
+
+            // 2. Fade out the traveling heart into the seal & open flap
+            const t1 = setTimeout(() => {
+                heart.opacity = 0;
+                updateHeartDOM();
+                envelopeBox.classList.add('opened');
+            }, 550);
+
+            // 3. Reveal the full parchment letter modal smoothly
+            const t2 = setTimeout(() => {
+                currentState = STATE.READING;
+                letterOverlay.classList.add('visible');
+            }, 2200);
+
+            envelopeTimers.push(t1, t2);
+        }
+
+        function resetAndReplayJourney() {
+            clearSequenceTimers();
+
+            // Reset UI classes
+            letterOverlay.classList.remove('visible');
+            envelopeBox.classList.remove('opened');
+            waxSeal.classList.remove('seal-glow');
+            roseTrigger.classList.remove('bloomed');
+            
+            rosePrompt.style.opacity = '0.85';
+            rosePrompt.style.transform = 'translateY(0px)';
+
+            // Reset Camera & Heart coordinates
+            camera.x = 0;
+            camera.y = 0;
+            heart.x = HEART_START_POS.x;
+            heart.y = HEART_START_POS.y;
+            heart.scale = 0;
+            heart.opacity = 0;
+            heart.rotation = 0;
+
+            trailParticles.length = 0;
+            updateWorldTransform();
+            updateHeartDOM();
+
+            currentState = STATE.IDLE;
+        }
+
+        // Click & Keyboard listeners on the Rose
+        roseTrigger.addEventListener('click', startBloomSequence);
+        roseTrigger.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                startBloomSequence();
+            }
+        });
+
+        /* ============================================================================
+           DOM TRANSFORM UPDATERS (GPU ACCELERATED)
+           ============================================================================ */
+        function updateWorldTransform() {
+            const screenCenterX = cw / 2;
+            const screenCenterY = ch / 2;
+            const tx = screenCenterX - camera.x;
+            const ty = screenCenterY - camera.y;
+            worldEl.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0)`;
+        }
+
+        function updateHeartDOM() {
+            heartEntity.style.opacity = heart.opacity.toFixed(3);
+            heartEntity.style.transform = `translate3d(${heart.x.toFixed(2)}px, ${heart.y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${heart.scale.toFixed(3)}) rotate(${heart.rotation.toFixed(1)}deg)`;
+        }
+
+        /* ============================================================================
+           MAIN ANIMATION LOOP (requestAnimationFrame)
+           ============================================================================ */
+        function animate(now) {
+            // 1. Update State Machine & Camera/Heart Coordinates
+            if (currentState === STATE.BLOOMING) {
+                const elapsed = now - stateStartTime;
+                // Wait 1.4s while petals unfold before emerging heart
+                if (elapsed > 1400) {
+                    currentState = STATE.EMERGING;
+                    stateStartTime = now;
+                }
+            } 
+            else if (currentState === STATE.EMERGING) {
+                const duration = 2100;
+                const rawT = clamp01((now - stateStartTime) / duration);
+                const easeT = easeOutCubic(rawT);
+
+                // Heart rises gently from the center of the rose
+                heart.x = HEART_START_POS.x + Math.sin(rawT * Math.PI * 2) * 8;
+                heart.y = HEART_START_POS.y + (HEART_FLOAT_POS.y - HEART_START_POS.y) * easeT;
+                heart.scale = easeOutBack( clamp01(rawT * 1.25) );
+                heart.opacity = clamp01(rawT * 2.2);
+                heart.rotation = Math.sin(rawT * Math.PI * 2) * 6;
+
+                // Camera subtly pans up to meet the rising heart
+                camera.x = heart.x * 0.3;
+                camera.y = (HEART_FLOAT_POS.y * 0.55) * easeInOutCubic(rawT);
+
+                if (Math.random() > 0.25) {
+                    spawnStardust(heart.x, heart.y + 10, 2, 18);
+                }
+
+                updateHeartDOM();
+
+                if (rawT >= 1) {
+                    currentState = STATE.JOURNEY;
+                    stateStartTime = now;
+                }
+            } 
+            else if (currentState === STATE.JOURNEY) {
+                const duration = 5600; // 5.6 seconds smooth celestial flight
+                const rawT = clamp01((now - stateStartTime) / duration);
+                const easeT = easeInOutCubic(rawT);
+
+                // Define graceful S-curve Bezier control points from Rose to Envelope Wax Seal
+                const p0 = { x: HEART_FLOAT_POS.x, y: HEART_FLOAT_POS.y };
+                const p1 = { x: -340, y: -680 };
+                const p2 = { x: 540, y: -1320 };
+                // Target lands right on the Wax Seal of the Envelope
+                const p3 = { x: ENVELOPE_POS.x, y: ENVELOPE_POS.y + 10 };
+
+                const pos = getCubicBezierPoint(easeT, p0, p1, p2, p3);
+                
+                // Calculate slight banking angle along curve
+                const nextPos = getCubicBezierPoint(clamp01(easeT + 0.01), p0, p1, p2, p3);
+                const dx = nextPos.x - pos.x;
+                
+                heart.x = pos.x;
+                heart.y = pos.y;
+                heart.rotation = clamp01(1 - rawT) * (dx * 1.8);
+                heart.scale = 1 + Math.sin(rawT * Math.PI) * 0.15;
+
+                // Smooth camera tracking (interpolates from initial offset to center on the envelope)
+                const camStart = { x: 0, y: HEART_FLOAT_POS.y * 0.55 };
+                const camEnd = { x: ENVELOPE_POS.x, y: ENVELOPE_POS.y };
+                
+                // Camera follows the heart closely with a dreamy cinematic lag
+                camera.x = pos.x * 0.85 + (camEnd.x * 0.15 * easeT);
+                camera.y = camStart.y + (camEnd.y - camStart.y) * easeT;
+
+                // Emit rich stardust trail along the heart's path
+                spawnStardust(heart.x, heart.y + 14, 3, 22);
+
+                updateHeartDOM();
+
+                if (rawT >= 1) {
+                    // Snap camera cleanly to envelope center
+                    camera.x = ENVELOPE_POS.x;
+                    camera.y = ENVELOPE_POS.y;
+                    triggerEnvelopeOpening();
+                }
+            }
+
+            // Always keep world container synced with camera
+            updateWorldTransform();
+
+            // 2. Render Background Canvas (Parallax Sky + Fireflies + Stardust Trail)
+            ctx.clearRect(0, 0, cw, ch);
+
+            // Subtle ambient sky gradient shift based on camera altitude
+            const altitudeRatio = clamp01(Math.abs(camera.y) / 1850);
+            const bgGrad = ctx.createRadialGradient(cw / 2, ch / 2, 50, cw / 2, ch / 2, Math.max(cw, ch) * 0.8);
+            bgGrad.addColorStop(0, altitudeRatio > 0.5 ? '#1b0826' : '#16061f');
+            bgGrad.addColorStop(0.6, '#090310');
+            bgGrad.addColorStop(1, '#030106');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, cw, ch);
+
+            // Draw Parallax Twinkling Stars
+            for (let i = 0; i < stars.length; i++) {
+                const s = stars[i];
+                // Modulo wrapping so stars tile seamlessly no matter how far camera travels
+                let sx = ((s.x - camera.x * s.parallax) % cw + cw) % cw;
+                let sy = ((s.y - camera.y * s.parallax) % ch + ch) % ch;
+
+                const twinkle = Math.sin(now * s.twinkleSpeed + s.twinklePhase) * 0.3 + 0.7;
+                ctx.beginPath();
+                ctx.arc(sx, sy, s.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `hsla(${s.hue}, 80%, 88%, ${s.alpha * twinkle})`;
+                ctx.fill();
+            }
+
+            // Draw Floating Fireflies in World Space
+            for (let i = 0; i < fireflies.length; i++) {
+                const f = fireflies[i];
+                f.x += f.vx;
+                f.y += f.vy;
+                if (f.y < -2300) f.y = 400;
+
+                const screenX = f.x - camera.x + cw / 2;
+                const screenY = f.y - camera.y + ch / 2;
+
+                // Only draw if within screen bounds
+                if (screenX > -50 && screenX < cw + 50 && screenY > -50 && screenY < ch + 50) {
+                    const pulse = (Math.sin(now * 0.0025 + f.phase) + 1) * 0.45 + 0.1;
+                    const grad = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, f.radius * 4);
+                    grad.addColorStop(0, `rgba(${f.color}, ${pulse})`);
+                    grad.addColorStop(1, `rgba(${f.color}, 0)`);
+
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, f.radius * 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Draw & Update Heart Stardust Trail Particles
+            for (let i = trailParticles.length - 1; i >= 0; i--) {
+                const p = trailParticles[i];
+                p.wx += p.vx;
+                p.wy += p.vy;
+                p.life -= p.decay;
+
+                if (p.life <= 0) {
+                    trailParticles.splice(i, 1);
+                    continue;
+                }
+
+                const sx = p.wx - camera.x + cw / 2;
+                const sy = p.wy - camera.y + ch / 2;
+
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                const color = p.isGold ? '253, 224, 71' : '251, 113, 133';
+                
+                // Soft glow
+                const pGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, p.size * 2.2);
+                pGrad.addColorStop(0, '#ffffff');
+                pGrad.addColorStop(0.4, `rgba(${color}, 0.9)`);
+                pGrad.addColorStop(1, `rgba(${color}, 0)`);
+
+                ctx.fillStyle = pGrad;
+                ctx.beginPath();
+                ctx.arc(sx, sy, p.size * 2.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        /* ============================================================================
+           UI CONTROLS (REPLAY EXPERIENCE BUTTONS)
+           ============================================================================ */
+        document.getElementById('btn-replay-float').addEventListener('click', resetAndReplayJourney);
+        document.getElementById('btn-replay-modal').addEventListener('click', resetAndReplayJourney);
+
+        // Start animation loop when window loads
+        window.onload = function () {
+            updateWorldTransform();
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
